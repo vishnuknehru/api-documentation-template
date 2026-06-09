@@ -1,0 +1,18 @@
+{
+  "sections": [
+    {
+      "title": "Getting Started",
+      "items": [
+        { "title": "Introduction",    "file": "guides/getting-started.mdx" },
+        { "title": "Authentication",  "file": "guides/authentication.mdx" },
+        { "title": "Webhook",         "file": "guides/webhooks.mdx" }
+      ]
+    },
+    {
+      "title": "API Reference",
+      "openapi": "versions/v{version}/openapi.yaml",
+      "groupBy": "tags",
+      "order": ["Users", "Orders"]
+    }
+  ]
+}

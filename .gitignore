@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+sandbox/node_modules/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+sandbox/dist/
+
+# Generated SDKs (regenerate with: make generate-sdks)
+frontend/public/sdks/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo

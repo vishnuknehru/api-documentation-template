@@ -1,0 +1,123 @@
+# Getting Started
+
+Welcome to the **Example API** documentation. This guide walks you through making your first API request in under five minutes.
+
+<Callout type="note" title="You're looking at a template">
+  This is the sample API bundled with the documentation template. When you fork this
+  repository, replace the contents of `content/apis/example/` with your own API spec
+  and guides.
+</Callout>
+
+## Prerequisites
+
+You'll need:
+- A valid client ID and client secret (use the sandbox credentials below for testing)
+- A REST client such as **curl**, **Postman**, or an HTTP library in your language of choice
+
+## Base URLs
+
+| Environment | URL |
+|---|---|
+| Production | `https://api.example.com/v2` |
+| Sandbox | `http://localhost:4000/sandbox/example/v2` |
+
+The sandbox runs locally via Docker and never touches production data. All requests return synthetic data generated from the OpenAPI schema.
+
+## Sandbox credentials
+
+```
+Client ID:     sandbox_client_id_abc123
+Client Secret: sandbox_secret_xyz789
+```
+
+<Callout type="warning" title="Never use sandbox credentials in production">
+  The sandbox credentials are public and pre-configured for local testing only.
+  Generate real credentials in your production environment.
+</Callout>
+
+## Step 1 — Get an access token
+
+All API requests require a Bearer token. Exchange your credentials for a token using the OAuth 2.0 client credentials flow:
+
+<Tabs>
+  <Tab label="curl">
+    ```bash
+    curl -X POST http://localhost:4000/oauth/token \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "client_id": "sandbox_client_id_abc123",
+        "client_secret": "sandbox_secret_xyz789"
+      }'
+    ```
+  </Tab>
+  <Tab label="JavaScript">
+    ```js
+    const res = await fetch('http://localhost:4000/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: 'sandbox_client_id_abc123',
+        client_secret: 'sandbox_secret_xyz789',
+      }),
+    });
+    const { access_token } = await res.json();
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import requests
+
+    res = requests.post('http://localhost:4000/oauth/token', json={
+        'client_id': 'sandbox_client_id_abc123',
+        'client_secret': 'sandbox_secret_xyz789',
+    })
+    token = res.json()['access_token']
+    ```
+  </Tab>
+</Tabs>
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+## Step 2 — Make your first request
+
+Use the token to call the API. Here's how to create a user:
+
+```bash
+curl -X POST http://localhost:4000/sandbox/example/v2/users \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "role": "member"
+  }'
+```
+
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Alice Johnson",
+  "email": "alice@example.com",
+  "role": "member",
+  "createdAt": "2026-06-08T10:00:00Z"
+}
+```
+
+## Step 3 — Explore with Try it
+
+Every endpoint in the API Reference has a built-in **Try it** console on the right panel.
+Enter your sandbox credentials, fill in the parameters, and send a live request directly from the docs.
+
+## Next steps
+
+- Read the [Authentication guide](/example/v2/guides/authentication) to understand token scopes and refresh flows
+- Set up [Webhook](/example/v2/guides/webhooks) to receive real-time event notifications
+- Download the [SDK](/example/v2/sdks) for your language to get started faster

@@ -1,0 +1,92 @@
+# Authentication
+
+The Example API uses **OAuth 2.0 Client Credentials** flow for all API requests. Every request must include a valid Bearer token in the `Authorization` header.
+
+## How it works
+
+```
+Client                          Auth Server                  API
+  │                                 │                          │
+  │── POST /oauth/token ───────────►│                          │
+  │   client_id + client_secret     │                          │
+  │                                 │── Validates creds ──────►│
+  │◄── access_token ───────────────│                          │
+  │                                 │                          │
+  │── GET /users ───────────────────────────────────────────►  │
+  │   Authorization: Bearer <token>                            │
+  │◄── 200 OK ──────────────────────────────────────────────── │
+```
+
+## Getting a token
+
+Send a `POST` request to `/oauth/token` with your client credentials:
+
+```bash
+curl -X POST https://api.example.com/oauth/token \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET"
+  }'
+```
+
+**Successful response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+<Callout type="note">
+  Tokens expire after **1 hour**. Your application should request a new token when
+  the current one expires. Cache tokens and reuse them — don't request a new one for
+  every API call.
+</Callout>
+
+## Using the token
+
+Include the token in the `Authorization` header of every request:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Sandbox credentials
+
+For local development and testing, use the pre-configured sandbox credentials:
+
+| Field | Value |
+|---|---|
+| Client ID | `sandbox_client_id_abc123` |
+| Client Secret | `sandbox_secret_xyz789` |
+| Token endpoint | `http://localhost:4000/oauth/token` |
+
+These credentials are valid for the local sandbox only and cannot be used against the production API.
+
+## Error responses
+
+If authentication fails, the API returns a `401 Unauthorized` response:
+
+```json
+{
+  "error": "unauthorized",
+  "message": "Bearer token is missing or invalid."
+}
+```
+
+If the token has expired, request a new one:
+
+```json
+{
+  "error": "token_expired",
+  "message": "The access token has expired. Request a new token using /oauth/token."
+}
+```
+
+<Callout type="danger" title="Keep credentials secure">
+  Never commit client secrets to version control or expose them in client-side code.
+  Store credentials in environment variables and use a secrets manager in production.
+</Callout>

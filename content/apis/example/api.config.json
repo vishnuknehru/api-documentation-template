@@ -1,0 +1,8 @@
+{
+  "name": "Example API",
+  "description": "A fully-featured example API demonstrating all documentation template capabilities, including OAuth 2.0, publish events, and multiple API versions.",
+  "icon": "code-2",
+  "defaultVersion": "v2",
+  "versions": ["v2", "v1"],
+  "color": "#111827"
+}

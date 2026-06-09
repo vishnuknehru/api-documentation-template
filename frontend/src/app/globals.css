@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Light Theme (default) ──────────────────────────────────────────────── */
+:root {
+  --sidebar-width: 272px;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+
+  --border: #e5e7eb;
+  --border-subtle: #f3f4f6;
+
+  --accent: #111827;
+  --accent-hover: #000000;
+  --accent-muted: #e5e7eb;
+  --accent-contrast: #ffffff;
+
+  --sidebar-bg: #f9fafb;
+  --sidebar-border: #e5e7eb;
+  --sidebar-item-hover: #f3f4f6;
+  --sidebar-item-active-bg: #e5e7eb;
+  --sidebar-item-active-text: #111827;
+
+  --topbar-bg: #ffffff;
+  --topbar-border: #e5e7eb;
+
+  --code-bg: #f8f8f8;
+  --code-border: #e5e7eb;
+}
+
+/* ─── Dark Theme ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border: #334155;
+  --border-subtle: #1e293b;
+
+  --accent: #020617;
+  --accent-hover: #111827;
+  --accent-muted: #1e293b;
+  --accent-contrast: #f8fafc;
+
+  --sidebar-bg: #0f172a;
+  --sidebar-border: #1e293b;
+  --sidebar-item-hover: #1e293b;
+  --sidebar-item-active-bg: #020617;
+  --sidebar-item-active-text: #f8fafc;
+
+  --topbar-bg: #0f172a;
+  --topbar-border: #1e293b;
+
+  --code-bg: #1e293b;
+  --code-border: #334155;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Sidebar Layout ─────────────────────────────────────────────────────── */
+.docs-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.docs-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  max-width: var(--sidebar-width);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow-y: auto;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  z-index: 40;
+}
+
+.docs-main {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .docs-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .docs-sidebar.open {
+    transform: translateX(0);
+  }
+  .docs-main {
+    margin-left: 0;
+  }
+}
+
+/* ─── Method Badge ───────────────────────────────────────────────────────── */
+.method-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-mono), monospace;
+}
+
+/* ─── Prose overrides for dark mode ─────────────────────────────────────── */
+[data-theme="dark"] .prose {
+  --tw-prose-body: var(--text-primary);
+  --tw-prose-headings: var(--text-primary);
+  --tw-prose-links: var(--accent);
+  --tw-prose-bold: var(--text-primary);
+  --tw-prose-counters: var(--text-secondary);
+  --tw-prose-bullets: var(--text-muted);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--text-secondary);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--text-muted);
+  --tw-prose-code: var(--text-primary);
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: var(--code-bg);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border-subtle);
+}

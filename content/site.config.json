@@ -1,0 +1,6 @@
+{
+  "siteName": "Developer Docs",
+  "logo": "/logo.svg",
+  "apis": ["example"],
+  "defaultApi": "example"
+}

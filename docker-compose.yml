@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - CONTENT_PATH=/app/content
+      - NEXT_PUBLIC_SANDBOX_URL=http://localhost:4000
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    volumes:
+      - ./content:/app/content:ro
+    depends_on:
+      - sandbox
+    restart: unless-stopped
+
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - CONTENT_PATH=/app/content
+      - MOCK_CLIENT_ID=sandbox_client_id_abc123
+      - MOCK_CLIENT_SECRET=sandbox_secret_xyz789
+      - MOCK_JWT_SECRET=sandbox_jwt_signing_secret_change_in_prod
+      - PORT=4000
+    volumes:
+      - ./content:/app/content:ro
+    restart: unless-stopped

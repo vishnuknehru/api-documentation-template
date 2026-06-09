@@ -1,0 +1,737 @@
+openapi: "3.0.3"
+info:
+  title: Example API
+  version: "2.0.0"
+  description: |
+    The Example API v2 expands on v1 with additional endpoints, publish events,
+    and enhanced user profiles. Breaking changes from v1: the `role` field is now
+    required when creating users; the `amount` field is now a float instead of integer.
+
+servers:
+  - url: https://api.example.com/v2
+    description: Production
+  - url: http://localhost:4000/sandbox/example/v2
+    description: Sandbox (local)
+
+tags:
+  - name: Users
+    description: Create and manage user accounts with enhanced profile support.
+  - name: Orders
+    description: Create, list, and manage orders.
+
+paths:
+  /users:
+    get:
+      tags: [Users]
+      operationId: list-users
+      summary: List users
+      description: Returns a paginated list of all users. Supports filtering by role and search by email.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: role
+          in: query
+          description: Filter users by role.
+          schema:
+            type: string
+            enum: [admin, member, viewer]
+        - name: search
+          in: query
+          description: Search by name or email (case-insensitive substring match).
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Paginated list of users.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                  total:
+                    type: integer
+                    example: 142
+                  limit:
+                    type: integer
+                    example: 20
+                  offset:
+                    type: integer
+                    example: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags: [Users]
+      operationId: create-user
+      summary: Create a user
+      description: Creates a new user account with optional profile information.
+      x-webhook-event: "user.created"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: User created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      operationId: get-user
+      summary: Get a user
+      description: Retrieves a single user including their profile metadata.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The user object.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    patch:
+      tags: [Users]
+      operationId: update-user
+      summary: Update a user
+      description: Partially update a user's details. Only provided fields are updated.
+      x-webhook-event: "user.updated"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: The updated user object.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags: [Users]
+      operationId: delete-user
+      summary: Delete a user
+      description: Permanently deletes a user and all associated data. This action cannot be undone.
+      x-webhook-event: "user.deleted"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: User deleted. No content returned.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /orders:
+    get:
+      tags: [Orders]
+      operationId: list-orders
+      summary: List orders
+      description: Returns a paginated list of orders. Optionally filter by user or status.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          description: Filter orders by user ID.
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter by order status.
+          schema:
+            type: string
+            enum: [pending, processing, shipped, delivered, cancelled]
+      responses:
+        "200":
+          description: Paginated list of orders.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+                  total:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    post:
+      tags: [Orders]
+      operationId: create-order
+      summary: Create an order
+      description: |
+        Creates a new order and shares the initial order status through an
+        `order.status` publish event after the order is successfully created.
+      x-webhook-event: "order.status"
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderInput"
+      responses:
+        "201":
+          description: Order created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Malformed request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid authentication.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Alice Johnson"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        role:
+          type: string
+          enum: [admin, member, viewer]
+          example: "member"
+        profile:
+          type: object
+          description: Extended profile metadata (new in v2).
+          properties:
+            company:
+              type: string
+              example: "Acme Corp"
+            timezone:
+              type: string
+              example: "America/New_York"
+            avatarUrl:
+              type: string
+              format: uri
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-06-01T08:00:00Z"
+
+    CreateUserInput:
+      type: object
+      required: [name, email, role]
+      properties:
+        name:
+          type: string
+          example: "Alice Johnson"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        role:
+          type: string
+          enum: [admin, member, viewer]
+          description: Required in v2 (was optional in v1).
+          example: "member"
+        profile:
+          type: object
+          properties:
+            company:
+              type: string
+            timezone:
+              type: string
+
+    UpdateUserInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member, viewer]
+        profile:
+          type: object
+          properties:
+            company:
+              type: string
+            timezone:
+              type: string
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "660f9511-f3ac-52e5-b827-557766551111"
+        userId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+          example: "pending"
+        amount:
+          type: number
+          format: float
+          description: Total amount. In v2 this is a float (was integer in v1).
+          example: 49.99
+        currency:
+          type: string
+          example: "USD"
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateOrderInput:
+      type: object
+      required: [userId, amount, currency]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        amount:
+          type: number
+          format: float
+          example: 49.99
+        currency:
+          type: string
+          example: "USD"
+        metadata:
+          type: object
+          description: Arbitrary key-value metadata attached to the order.
+          additionalProperties: true
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "invalid_request"
+        message:
+          type: string
+          example: "The 'email' field is required."
+
+    # ── Publish event envelope schemas ──────────────────────────────────────────
+    # These schemas describe the payload structure delivered to registered publish
+    # endpoints. Each event type has its own schema under x-webhooks below.
+
+    UserPublishEvent:
+      type: object
+      description: Envelope delivered for all user lifecycle events.
+      required: [id, type, timestamp, api_version, data]
+      properties:
+        id:
+          type: string
+          description: Unique event identifier (evt_ prefix).
+          example: "evt_7f3a9c1b2d4e5f6a"
+        type:
+          type: string
+          description: Event type name.
+          enum: [user.created, user.updated, user.deleted]
+          example: "user.created"
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the event occurred.
+          example: "2026-01-15T10:30:00Z"
+        api_version:
+          type: string
+          description: API version that produced the event.
+          example: "v2"
+        data:
+          description: The user object at the time of the event.
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440000"
+            name:
+              type: string
+              example: "Alice Johnson"
+            email:
+              type: string
+              format: email
+              example: "alice@example.com"
+            role:
+              type: string
+              enum: [admin, member, viewer]
+              example: "member"
+            profile:
+              type: object
+              properties:
+                company:
+                  type: string
+                  example: "Acme Corp"
+                timezone:
+                  type: string
+                  example: "America/New_York"
+                avatarUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+            createdAt:
+              type: string
+              format: date-time
+              example: "2026-01-15T10:30:00Z"
+            updatedAt:
+              type: string
+              format: date-time
+              example: "2026-06-01T08:00:00Z"
+
+    UserDeletedPublishEvent:
+      type: object
+      description: Envelope delivered when a user is permanently deleted.
+      required: [id, type, timestamp, api_version, data]
+      properties:
+        id:
+          type: string
+          example: "evt_a1b2c3d4e5f6g7h8"
+        type:
+          type: string
+          enum: [user.deleted]
+          example: "user.deleted"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-06-08T14:00:00Z"
+        api_version:
+          type: string
+          example: "v2"
+        data:
+          type: object
+          description: Minimal user reference included after deletion.
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: "550e8400-e29b-41d4-a716-446655440000"
+            email:
+              type: string
+              format: email
+              example: "alice@example.com"
+            deletedAt:
+              type: string
+              format: date-time
+              example: "2026-06-08T14:00:00Z"
+
+    OrderStatus:
+      type: object
+      description: Order status details delivered in order status publish events.
+      required: [orderId, previousStatus, currentStatus, updatedAt]
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        previousStatus:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+          example: "processing"
+        currentStatus:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+          example: "shipped"
+        note:
+          type: string
+          example: "Package handed off to carrier"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-06-08T14:22:00Z"
+        estimatedDelivery:
+          type: string
+          format: date-time
+          example: "2026-06-12T18:00:00Z"
+
+    OrderStatusPublishEvent:
+      type: object
+      required: [id, type, timestamp, api_version, data]
+      properties:
+        id:
+          type: string
+          description: Unique event identifier.
+          example: "evt_9d3b7f2a8c1e4a5d"
+        type:
+          type: string
+          enum: ["order.status"]
+          example: "order.status"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-06-08T14:22:00Z"
+        api_version:
+          type: string
+          example: "v2"
+        data:
+          $ref: "#/components/schemas/OrderStatus"
+
+# ── Publish event definitions ──────────────────────────────────────────────────
+# x-webhooks follows the OpenAPI 3.1 `webhooks:` pattern as an extension for 3.0.
+# Each key is an event type. The post.requestBody defines the payload the sandbox
+# will generate and POST to registered publish endpoints.
+# Authors: add x-webhook-event: "<event-name>" to any operation to link it here.
+
+x-webhooks:
+  user.created:
+    post:
+      summary: User created
+      description: |
+        Fired after a new user is created via `POST /users`. The sandbox generates
+        this payload from the schema below, merging any fields you provided in the
+        request body into `data` before delivery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPublishEvent"
+            examples:
+              new-member:
+                summary: A new member user was created
+                value:
+                  id: "evt_7f3a9c1b2d4e5f6a"
+                  type: "user.created"
+                  timestamp: "2026-01-15T10:30:00Z"
+                  api_version: "v2"
+                  data:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Alice Johnson"
+                    email: "alice@example.com"
+                    role: "member"
+                    profile:
+                      company: "Acme Corp"
+                      timezone: "America/New_York"
+                      avatarUrl: null
+                    createdAt: "2026-01-15T10:30:00Z"
+                    updatedAt: "2026-01-15T10:30:00Z"
+
+  user.updated:
+    post:
+      summary: User updated
+      description: |
+        Fired after a user is updated via `PATCH /users/{userId}`. The `data` field
+        contains the full user object after the update is applied.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPublishEvent"
+            examples:
+              role-change:
+                summary: User role was promoted to admin
+                value:
+                  id: "evt_b3c4d5e6f7a8b9c0"
+                  type: "user.updated"
+                  timestamp: "2026-03-20T09:15:00Z"
+                  api_version: "v2"
+                  data:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "Alice Johnson"
+                    email: "alice@example.com"
+                    role: "admin"
+                    profile:
+                      company: "Acme Corp"
+                      timezone: "America/New_York"
+                      avatarUrl: null
+                    createdAt: "2026-01-15T10:30:00Z"
+                    updatedAt: "2026-03-20T09:15:00Z"
+
+  user.deleted:
+    post:
+      summary: User deleted
+      description: |
+        Fired after a user is permanently deleted via `DELETE /users/{userId}`.
+        Only a minimal reference is included in `data` since the record no longer exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserDeletedPublishEvent"
+            examples:
+              deleted:
+                summary: A user account was deleted
+                value:
+                  id: "evt_c4d5e6f7a8b9c0d1"
+                  type: "user.deleted"
+                  timestamp: "2026-06-08T14:00:00Z"
+                  api_version: "v2"
+                  data:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    email: "alice@example.com"
+                    deletedAt: "2026-06-08T14:00:00Z"
+
+  order.status:
+    post:
+      summary: "Order status changed"
+      description: "Fired when an order's status is created or updated. Includes the previous and current status values, any provided note, and an estimated delivery date for shipped orders."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusPublishEvent"
+            examples:
+              shipped:
+                summary: "Order shipped"
+                value:
+                  id: "evt_9d3b7f2a8c1e4a5d"
+                  type: "order.status"
+                  timestamp: "2026-06-08T14:22:00Z"
+                  api_version: "v2"
+                  data:
+                    orderId: "550e8400-e29b-41d4-a716-446655440001"
+                    previousStatus: "processing"
+                    currentStatus: "shipped"
+                    note: "Package handed off to carrier"
+                    updatedAt: "2026-06-08T14:22:00Z"
+                    estimatedDelivery: "2026-06-12T18:00:00Z"
+              cancelled:
+                summary: "Order cancelled"
+                value:
+                  id: "evt_3e7a9c1b2d4f8a6e"
+                  type: "order.status"
+                  timestamp: "2026-06-09T09:15:00Z"
+                  api_version: "v2"
+                  data:
+                    orderId: "550e8400-e29b-41d4-a716-446655440001"
+                    previousStatus: "processing"
+                    currentStatus: "cancelled"
+                    note: "Customer requested cancellation"
+                    updatedAt: "2026-06-09T09:15:00Z"

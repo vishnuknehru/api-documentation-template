@@ -1,0 +1,115 @@
+# Webhook
+
+Publish events let the Example API push domain changes to your server whenever something happens in the system, with no polling required.
+
+## How publish delivery works
+
+```
+Your Server                   Example API
+     │                              │
+     │── Provide publish URL ──────►│
+     │                              │
+     │  (when request succeeds)     │
+     │                              │
+     │◄── POST /your-publish-url ──│
+     │    event payload + auth      │
+     │                              │
+     │── 200 OK ──────────────────►│
+```
+
+When an event occurs, the API sends a `POST` request to your publish URL with the event payload. Your server should respond with a `2xx` status code within 10 seconds.
+
+## Try It publish delivery
+
+For sandbox requests, publish destination details are entered directly in the **Try it** console on endpoints that publish a domain event. The destination is used for that single request and is not stored in the sandbox cache.
+
+For example, the **Create Order** endpoint publishes an `order.status` event after the order is created. Open the **Publish Order** panel, enter your endpoint URL, and optionally provide OAuth credentials for delivery authentication.
+
+<Callout type="note" title="Use a publish testing service">
+  For local development, use webhook.site or smee.io to receive publish deliveries without running your own server.
+</Callout>
+
+## Event payload format
+
+All publish events follow the same envelope format:
+
+```json
+{
+  "id": "evt_550e8400-e29b-41d4-a716-446655440000",
+  "type": "order.status",
+  "timestamp": "2026-06-08T10:00:00Z",
+  "api_version": "v2",
+  "data": {
+    "orderId": "660f9511-f3ac-52e5-b827-557766551111",
+    "previousStatus": "pending",
+    "currentStatus": "shipped",
+    "note": "Package handed off to carrier",
+    "updatedAt": "2026-06-08T10:00:00Z"
+  }
+}
+```
+
+## Verifying publish signatures
+
+To ensure publish payloads are from the Example API, verify the `Authorization` header:
+
+<Tabs>
+  <Tab label="Node.js">
+    ```js
+    import jwt from 'jsonwebtoken';
+
+    app.post('/publish', (req, res) => {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      try {
+        jwt.verify(token, process.env.PUBLISH_SECRET);
+        console.log('Event:', req.body.type);
+        res.status(200).send('OK');
+      } catch {
+        res.status(401).send('Unauthorized');
+      }
+    });
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    import jwt
+    from flask import Flask, request
+
+    app = Flask(__name__)
+
+    @app.route('/publish', methods=['POST'])
+    def publish():
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        try:
+            jwt.decode(token, os.environ['PUBLISH_SECRET'], algorithms=['HS256'])
+            event = request.json
+            print(f"Event: {event['type']}")
+            return 'OK', 200
+        except jwt.InvalidTokenError:
+            return 'Unauthorized', 401
+    ```
+  </Tab>
+</Tabs>
+
+## Available events
+
+| Event | Description |
+|---|---|
+| `user.created` | A new user account was created |
+| `user.deleted` | A user account was permanently deleted |
+| `order.status` | An order status was created or updated |
+
+## Retry policy
+
+If your server returns a non-`2xx` response, the API will retry the delivery:
+
+- After 5 minutes
+- After 30 minutes
+- After 2 hours
+- After 12 hours
+
+After 4 failed attempts, the publish delivery is marked as failed and no further retries are made.
+
+<Callout type="warning">
+  Your publish endpoint should be **idempotent** because the same event may be delivered more than once. Use the `id` field in the payload to detect and deduplicate duplicate deliveries.
+</Callout>
